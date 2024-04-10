@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 
 export default async function SettingPage(){
     const session = await auth();
+    
     return(
         <div>
             <p>{JSON.stringify(session)}</p>
