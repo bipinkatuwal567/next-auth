@@ -12,7 +12,7 @@ export const getUserByEmail = async (email: string) => {
   } catch {
     return null;
   }
-};
+};  
 
 export const getUserById = async (id: string | undefined) => {
   try {
