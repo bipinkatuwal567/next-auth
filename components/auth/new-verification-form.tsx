@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import CardWrapper from "./CardWrapper";
-import { BeatLoader, PropagateLoader } from "react-spinners";
+import { BeatLoader } from "react-spinners";
 import { useCallback, useEffect, useState } from "react";
 import { newVerification } from "@/actions/new-verification";
 import FormError from "../form-error";
