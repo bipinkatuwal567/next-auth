@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 
-export async function twoFactorVerification(userId: string) {
+export async function getTwoFactorConfirmation(userId: string) {
   try {
     const twoFactorVerification = await db.twoFactorConfirmation.findUnique({
       where: { userId },

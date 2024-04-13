@@ -4,9 +4,11 @@ import { db } from "@/lib/db";
 import authConfig from "@/auth.config";
 import { getUserById } from "./data/user";
 import { UserRole } from "@prisma/client";
+import { getTwoFactorConfirmation } from "./data/two-factor-confirmation";
 
 export type ExtendUser = DefaultSession["user"] & {
   role: UserRole;
+  isTwoFactorEnabled: boolean;
 };
 
 declare module "next-auth" {
@@ -38,14 +40,27 @@ export const {
   callbacks: {
     async signIn({ user, account }) {
       // Allow OAuth without email verification
-      if(account?.provider !== "credentials") return true;
+      if (account?.provider !== "credentials") return true;
 
       const existingUser = await getUserById(user.id);
 
       // Prevent sign in withotu email verificaiton
       if (!existingUser || !existingUser?.emailVerified) return false;
 
-      // TODO: Add 2FA check
+      if (existingUser.isTwoFactorEnabled) {
+        const twoFactorConfirmation = await getTwoFactorConfirmation(
+          existingUser.id
+        );
+
+        console.log({twoFactorConfirmation})
+
+        if(!twoFactorConfirmation) return false;
+
+        // Delete two factor confirmation for next sign up
+        await db.twoFactorConfirmation.delete({
+          where: {id: twoFactorConfirmation.id}
+        })
+      }
 
       return true;
     },
@@ -57,6 +72,10 @@ export const {
       if (session.user && token.role) {
         session.user.role = token.role as UserRole;
       }
+
+      if (session.user) {
+        session.user.isTwoFactorEnabled = token.isTwoFactorEnabled as boolean;
+      }
       return session;
     },
     async jwt({ token }) {
@@ -67,6 +86,7 @@ export const {
       if (!existingUser) return token;
 
       token.role = existingUser.role;
+      token.isTwoFactorEnabled = existingUser.isTwoFactorEnabled;
       return token;
     },
   },
