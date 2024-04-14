@@ -5,10 +5,12 @@ import authConfig from "@/auth.config";
 import { getUserById } from "./data/user";
 import { UserRole } from "@prisma/client";
 import { getTwoFactorConfirmation } from "./data/two-factor-confirmation";
+import { getAccountByUserId } from "./data/account";
 
 export type ExtendUser = DefaultSession["user"] & {
   role: UserRole;
   isTwoFactorEnabled: boolean;
+  isOAuth: boolean;
 };
 
 declare module "next-auth" {
@@ -52,14 +54,14 @@ export const {
           existingUser.id
         );
 
-        console.log({twoFactorConfirmation})
+        console.log({ twoFactorConfirmation });
 
-        if(!twoFactorConfirmation) return false;
+        if (!twoFactorConfirmation) return false;
 
         // Delete two factor confirmation for next sign up
         await db.twoFactorConfirmation.delete({
-          where: {id: twoFactorConfirmation.id}
-        })
+          where: { id: twoFactorConfirmation.id },
+        });
       }
 
       return true;
@@ -76,15 +78,31 @@ export const {
       if (session.user) {
         session.user.isTwoFactorEnabled = token.isTwoFactorEnabled as boolean;
       }
+
+      if (session.user) {
+        session.user.name = token.name;
+        session.user.email = token.email;
+        session.user.isOAuth = token.isOAuth as boolean;
+      }
+
       return session;
     },
     async jwt({ token }) {
       if (!token.sub) return token;
 
+      console.log("I am called!");
+      
+
       const existingUser = await getUserById(token.sub);
 
       if (!existingUser) return token;
 
+      const existingAccount = await getAccountByUserId(existingUser.id);
+
+
+      token.name = existingUser.name;
+      token.isOAuth = !!existingAccount;
+      token.email = existingUser.email;
       token.role = existingUser.role;
       token.isTwoFactorEnabled = existingUser.isTwoFactorEnabled;
       return token;
